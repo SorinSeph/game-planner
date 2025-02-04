@@ -9,12 +9,18 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Scene } from "@babylonjs/core/scene";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Curve3 } from "@babylonjs/core/Maths/math.path";
+import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Matrix } from "@babylonjs/core/Maths/math";
+import { PointerDragBehavior } from "@babylonjs/core/Behaviors/Meshes/pointerDragBehavior";
+import { ActionManager } from "@babylonjs/core/Actions/actionManager";
+import { ExecuteCodeAction } from "@babylonjs/core/Actions/directActions";
 import * as GUI from "@babylonjs/gui";
+import { GroundMesh } from "babylonjs";
 
 const GamePlanner: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -24,25 +30,30 @@ const GamePlanner: React.FC = () => {
     useEffect(() => {
         if (!canvasRef.current) return;
 
-        const engine = new Engine(canvasRef.current, true);
-        const scene = new Scene(engine);
+        const focusedWindow: GroundMesh | null = null;
+
+        const engine: Engine = new Engine(canvasRef.current, true);
+        const scene: Scene = new Scene(engine);
+        scene.clearColor = new Color4(25 / 255, 30 / 255, 80 / 255, 1);
 
         // Setup Camera
-        const camera = new ArcRotateCamera("camera1", 0, 0, 10, Vector3.Zero(), scene);
+        const camera: ArcRotateCamera = new ArcRotateCamera("camera1", 0, 0, 10, Vector3.Zero(), scene);
         camera.attachControl(canvasRef.current, true);
         camera.wheelPrecision = 5;
         camera.inputs.removeByType("ArcRotateCameraPointersInput");
 
         // Custom Pointer Input
-        const customPointerInput = new ArcRotateCameraPointersInput();
+        const customPointerInput: ArcRotateCameraPointersInput = new ArcRotateCameraPointersInput();
         customPointerInput.buttons = [1, 2]; // Middle and Right mouse buttons
         camera.inputs.add(customPointerInput);
 
         // Lighting
-        const light = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
+        const light: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
+
+        var pointerDragBehavior: PointerDragBehavior = new PointerDragBehavior({ dragAxis: new Vector3(1, 0, 1) });
 
         // Ground Meshes
-        const groundMat = new StandardMaterial("groundMat", scene);
+        const groundMat: StandardMaterial = new StandardMaterial("groundMat", scene);
         groundMat.diffuseColor = new Color3(1, 0, 0);
 
         const ground = MeshBuilder.CreateGround("ground1", { width: 6, height: 6 }, scene);
@@ -103,9 +114,33 @@ const GamePlanner: React.FC = () => {
                 groundMat.diffuseColor = new Color3(0, 1, 0); // Change ground to green
                 console.log("debug");
             } else {
+                groundMat.diffuseColor = new Color3(1, 0, 0);
                 console.log("no hit");
             }
         };
+
+
+        //var pointerDragBehavior = new PointerDragBehavior({});
+        //var pointerDragBehavior = new BABYLON.PointerDragBehavior({dragPlaneNormal: new BABYLON.Vector3(0,1,0)});
+        // var pointerDragBehavior = new PointerDragBehavior({ dragAxis: new Vector3(1, 0, 1) });
+        // // Use drag plane in world space
+        // pointerDragBehavior.useObjectOrientationForDragging = false;
+        // pointerDragBehavior.onDragStartObservable.add((event) => {
+        //     console.log("dragStart");
+        //     //const clonedNode = pointerDragBehavior.attachedNode.clone()
+        //     ground.actionManager = actionManager
+        // })
+
+        // var actionManager = new ActionManager(scene);
+        // actionManager.registerAction(
+        //     new ExecuteCodeAction(ActionManager.OnPickDownTrigger, (event) => {
+        //         event.meshUnderPointer!.removeBehavior(pointerDragBehavior)
+        //         event.meshUnderPointer!.addBehavior(pointerDragBehavior);
+        //     }));
+
+        // ground.actionManager = actionManager
+
+        ground.addBehavior(new PointerDragBehavior({ dragPlaneNormal: new Vector3(0, 1, 0) }))
 
         // Render Loop
         engine.runRenderLoop(() => {
@@ -113,9 +148,9 @@ const GamePlanner: React.FC = () => {
         });
 
         // Handle Resize
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
+        // window.addEventListener("resize", () => {
+        //     engine.resize();
+        // });
 
         // Cleanup on Unmount
         return () => {
@@ -142,7 +177,7 @@ const GamePlanner: React.FC = () => {
                 value={inputText}
                 onChange={handleInputChange}
                 placeholder="Type your button text here..."
-                style={{ width: "300px", height: "100px", marginBottom: "20px" }}
+                style={{ width: "300px", height: "100px", marginBottom: "20px", resize: "none" }}
             />
 
             {/* Babylon.js Canvas */}
